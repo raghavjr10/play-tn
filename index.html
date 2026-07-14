@@ -1558,7 +1558,15 @@
       const container = document.getElementById('tournamentList');
       try {
         const res = await fetch(API + '/tournaments');
-        const tournaments = await res.json();
+        let tournaments = await res.json();
+        
+        // Merge with local storage to survive Vercel resets
+        const localTournaments = JSON.parse(localStorage.getItem('playtn_tournaments') || '[]');
+        localTournaments.forEach(lt => {
+          if (!tournaments.find(t => t.id === lt.id)) {
+            tournaments.unshift(lt);
+          }
+        });
 
         if (tournaments.length === 0) {
           container.innerHTML = `
@@ -1635,6 +1643,14 @@
         if (res.ok) {
           showMsg('tournamentMsg', '✅ ' + result.message, 'success');
           document.getElementById('tournamentForm').reset();
+          
+          // Persist to local storage
+          if (result.tournament) {
+             const localTournaments = JSON.parse(localStorage.getItem('playtn_tournaments') || '[]');
+             localTournaments.push(result.tournament);
+             localStorage.setItem('playtn_tournaments', JSON.stringify(localTournaments));
+          }
+          
           loadTournaments();
           setTimeout(() => closeModal('tournament'), 1500);
         } else {

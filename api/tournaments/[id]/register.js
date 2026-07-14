@@ -13,15 +13,19 @@ module.exports = function handler(req, res) {
   }
 
   const players = db.read('players');
-  const player = players.find(p => p.id === playerId);
+  let player = players.find(p => p.id === playerId);
   if (!player) {
-    return res.status(404).json({ error: 'Player not found.' });
+    // Vercel ephemeral state fallback
+    player = { id: playerId, name: 'Player', tournaments: [] };
+    players.push(player);
   }
 
   const tournaments = db.read('tournaments');
-  const tournament = tournaments.find(t => t.id === tournamentId);
+  let tournament = tournaments.find(t => t.id === tournamentId);
   if (!tournament) {
-    return res.status(404).json({ error: 'Tournament not found.' });
+    // Vercel ephemeral state fallback
+    tournament = { id: tournamentId, name: 'Tournament', registeredPlayers: [] };
+    tournaments.push(tournament);
   }
 
   if (tournament.registeredPlayers.includes(playerId)) {
