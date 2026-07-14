@@ -1023,7 +1023,7 @@
         <div class="gallery-slide" style="background-image: url('https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1200&q=80')">
           <span class="slide-label">BADMINTON</span>
         </div>
-        <div class="gallery-slide" style="background-image: url('https://images.unsplash.com/photo-1461896836934-bd45ba8b2cda?w=1200&q=80')">
+        <div class="gallery-slide" style="background-image: url('https://images.unsplash.com/photo-1552674605-15c2145efa38?w=1200&q=80')">
           <span class="slide-label">ATHLETICS</span>
         </div>
         <button class="slider-arrow left" id="sliderPrev">←</button>
@@ -1457,7 +1457,38 @@
         if (res.ok) {
           showMsg('organizerMsg', '✅ ' + result.message, 'success');
           document.getElementById('organizerForm').reset();
-          loadOrganizers(); // refresh list
+          
+          // Manually add to UI for immediate display
+          const container = document.getElementById('organizerList');
+          const empty = container.querySelector('.org-empty');
+          if (empty) empty.remove();
+          
+          let grid = container.querySelector('.org-grid');
+          if (!grid) {
+            grid = document.createElement('div');
+            grid.className = 'org-grid';
+            container.appendChild(grid);
+          }
+          
+          const initials = data.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+          const newCard = document.createElement('div');
+          newCard.className = 'org-card';
+          newCard.innerHTML = `
+              <div class="org-avatar">${initials}</div>
+              <h5>${data.name}</h5>
+              <div class="org-org">${data.organization}</div>
+              <div class="org-detail">📍 ${data.district}</div>
+              <div class="org-detail">📧 ${data.email}</div>
+          `;
+          
+          // Prepend to top of list
+          grid.insertBefore(newCard, grid.firstChild);
+          
+          // Also add to tournament create dropdown
+          const select = document.getElementById('tOrganizer');
+          if (result.organizer) {
+            select.innerHTML += `<option value="${result.organizer.id}">${data.name} — ${data.organization}</option>`;
+          }
         } else {
           showMsg('organizerMsg', '❌ ' + result.error, 'error');
         }
