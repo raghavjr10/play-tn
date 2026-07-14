@@ -1,0 +1,14 @@
+[
+  {
+    "id": "1784019440854",
+    "name": "raghav",
+    "email": "raghavjr10@gmail.com",
+    "phone": "1234567890",
+    "sport": "Football",
+    "district": "Coimbatore",
+    "registeredAt": "2026-07-14T08:57:20.854Z",
+    "tournaments": [
+      "1784019652295"
+    ]
+  }
+]
