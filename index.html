@@ -847,6 +847,29 @@
       background: rgba(240,165,0,0.08);
     }
 
+    /* ── Leaderboard specific rows ── */
+    .lb-row {
+      display: flex;
+      align-items: center;
+      background: var(--white);
+      border: 1px solid #e3e6ed;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 10px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .lb-row:hover { transform: translateX(4px); border-color: var(--gold); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .lb-rank {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.5rem;
+      color: var(--navy);
+      width: 40px;
+    }
+    .lb-info { flex: 1; }
+    .lb-name { font-weight: 700; color: var(--navy-deep); font-size: 1.05rem; }
+    .lb-meta { font-size: 0.82rem; color: var(--text-muted); margin-top: 3px; }
+    .lb-pts { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: var(--gold); }
+
     /* ── Mobile ── */
     @media (max-width: 768px) {
       .hamburger { display: flex; }
@@ -963,12 +986,18 @@
         <p style="color: var(--text-muted); margin-top: 6px;">Live standings across Tamil Nadu's sports ecosystem</p>
       </div>
       <div class="lb-tabs">
-        <button class="lb-tab active" data-tab="state">🏆 State</button>
-        <button class="lb-tab" data-tab="district">📍 District</button>
-        <button class="lb-tab" data-tab="sport">⚽ Sport-wise</button>
+        <button class="lb-tab active" data-tab="state" onclick="setLbTab('state')">🏆 State</button>
+        <button class="lb-tab" data-tab="district" onclick="openFilterModal('district')">📍 District</button>
+        <button class="lb-tab" data-tab="sport" onclick="openFilterModal('sport')">⚽ Sport-wise</button>
       </div>
-      <div class="lb-empty">
-        <p>No athlete rankings recorded in the database yet.</p>
+      <div style="text-align:center; margin-bottom: 20px; display:none;" id="lbActiveFilter">
+        <span style="background:rgba(240,165,0,0.15); border: 1px solid rgba(240,165,0,0.4); color:var(--navy-deep); padding: 6px 14px; border-radius:50px; font-weight:600; font-size:0.85rem;" id="lbFilterText"></span>
+        <button style="border:none; background:none; cursor:pointer; font-size:1.1rem; margin-left:8px; color:var(--text-muted); vertical-align:middle;" onclick="setLbTab('state')">✕</button>
+      </div>
+      <div id="leaderboardList" style="max-width: 700px; margin: 0 auto;">
+        <div class="lb-empty">
+          <p>Loading leaderboard...</p>
+        </div>
       </div>
     </div>
   </section>
@@ -1234,6 +1263,25 @@
         </div>
         <button class="form-submit" id="joinConfirmBtn" onclick="confirmJoinTournament()" disabled>Register for Tournament</button>
         <div id="joinMsg" class="form-msg" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       LEADERBOARD FILTER MODAL
+       ═══════════════════════════════════════ -->
+  <div class="modal-overlay" id="filterModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="filterTitle">Filter Leaderboard</h3>
+        <button class="modal-close" onclick="closeModal('filter')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label id="filterLabel">Select Option</label>
+          <select id="filterSelect"></select>
+        </div>
+        <button class="form-submit" onclick="applyFilter()">Apply Filter</button>
       </div>
     </div>
   </div>
@@ -1613,10 +1661,122 @@
     }
 
     // ═══════════════════════════════════════
+    // LEADERBOARD LOGIC
+    // ═══════════════════════════════════════
+    let allPlayers = [];
+    let currentFilter = { type: 'state', value: null };
+
+    async function loadLeaderboard() {
+      try {
+        const res = await fetch(API + '/players');
+        allPlayers = await res.json();
+        
+        // Mock points for visual demonstration based on data length/activity
+        allPlayers.forEach(p => {
+           p.points = (p.tournaments ? p.tournaments.length * 150 : 0) + (p.name.length * 15) + 300;
+        });
+
+        renderLeaderboard();
+      } catch (err) {
+        document.getElementById('leaderboardList').innerHTML = '<div class="lb-empty"><p>Could not load leaderboard.</p></div>';
+      }
+    }
+
+    function renderLeaderboard() {
+      let filtered = allPlayers;
+      if (currentFilter.type === 'district') {
+        filtered = allPlayers.filter(p => p.district === currentFilter.value);
+      } else if (currentFilter.type === 'sport') {
+        filtered = allPlayers.filter(p => p.sport === currentFilter.value);
+      }
+
+      filtered.sort((a, b) => b.points - a.points);
+      
+      const container = document.getElementById('leaderboardList');
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="lb-empty"><p>No players found for this category.</p></div>';
+        return;
+      }
+
+      let html = '';
+      filtered.forEach((p, index) => {
+        html += `
+          <div class="lb-row">
+            <div class="lb-rank">#${index + 1}</div>
+            <div class="lb-info">
+              <div class="lb-name">${p.name}</div>
+              <div class="lb-meta">${p.sport} · ${p.district}</div>
+            </div>
+            <div class="lb-pts">${p.points} PTS</div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function setLbTab(tab) {
+       document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+       document.querySelector('.lb-tab[data-tab="state"]').classList.add('active'); // set state active by default if not filtering
+       if (tab === 'state') {
+         currentFilter = { type: 'state', value: null };
+         document.getElementById('lbActiveFilter').style.display = 'none';
+         renderLeaderboard();
+       }
+    }
+
+    function openFilterModal(type) {
+       document.getElementById('filterTitle').textContent = type === 'district' ? 'Select District' : 'Select Sport';
+       document.getElementById('filterLabel').textContent = type === 'district' ? 'District' : 'Sport';
+       
+       const select = document.getElementById('filterSelect');
+       select.innerHTML = '';
+       
+       let options = [];
+       if (type === 'district') {
+         options = [...new Set(allPlayers.map(p => p.district))].filter(Boolean);
+       } else {
+         options = [...new Set(allPlayers.map(p => p.sport))].filter(Boolean);
+       }
+       
+       if (options.length === 0) {
+          options = ['No data available'];
+       }
+
+       options.forEach(opt => {
+         select.innerHTML += `<option value="${opt}">${opt}</option>`;
+       });
+       
+       // save type to dataset to use in applyFilter
+       document.getElementById('filterSelect').dataset.type = type;
+       openModal('filter');
+    }
+
+    function applyFilter() {
+      const type = document.getElementById('filterSelect').dataset.type;
+      const value = document.getElementById('filterSelect').value;
+      if (!value || value === 'No data available') {
+         closeModal('filter');
+         return;
+      }
+
+      currentFilter = { type, value };
+      
+      document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`.lb-tab[data-tab="${type}"]`).classList.add('active');
+      
+      document.getElementById('lbActiveFilter').style.display = 'block';
+      document.getElementById('lbFilterText').textContent = (type === 'district' ? '📍 ' : '⚽ ') + value;
+      
+      renderLeaderboard();
+      closeModal('filter');
+    }
+
+    // ═══════════════════════════════════════
     // INIT — Load data on page load
     // ═══════════════════════════════════════
     loadOrganizers();
     loadTournaments();
+    loadLeaderboard();
   </script>
 </body>
 </html>
