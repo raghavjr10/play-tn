@@ -1731,16 +1731,18 @@
        const select = document.getElementById('filterSelect');
        select.innerHTML = '';
        
-       let options = [];
-       if (type === 'district') {
-         options = [...new Set(allPlayers.map(p => p.district))].filter(Boolean);
-       } else {
-         options = [...new Set(allPlayers.map(p => p.sport))].filter(Boolean);
-       }
+       const ALL_DISTRICTS = [
+         'Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 
+         'Tirunelveli', 'Erode', 'Vellore', 'Thanjavur', 'Dindigul', 
+         'Kancheepuram', 'Cuddalore', 'Other'
+       ];
        
-       if (options.length === 0) {
-          options = ['No data available'];
-       }
+       const ALL_SPORTS = [
+         'Cricket', 'Football', 'Volleyball', 'Badminton', 'Kabaddi', 
+         'Athletics', 'Hockey', 'Tennis', 'Swimming', 'Other'
+       ];
+       
+       let options = type === 'district' ? ALL_DISTRICTS : ALL_SPORTS;
 
        options.forEach(opt => {
          select.innerHTML += `<option value="${opt}">${opt}</option>`;
