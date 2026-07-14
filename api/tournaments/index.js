@@ -7,16 +7,22 @@ module.exports = function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { name, sport, district, date, venue, organizerId } = req.body;
+    const { name, sport, district, date, venue, organizerId, organizerName, organizerOrg } = req.body;
 
-    if (!name || !sport || !district || !date || !organizerId) {
-      return res.status(400).json({ error: 'Name, sport, district, date, and organizerId are required.' });
+    if (!name || !sport || !district || !date || (!organizerId && !organizerName)) {
+      return res.status(400).json({ error: 'Name, sport, district, date, and organizer are required.' });
     }
 
     const organizers = db.read('organizers');
-    const organizer = organizers.find(o => o.id === organizerId);
-    if (!organizer) {
-      return res.status(404).json({ error: 'Organizer not found.' });
+    let finalOrgName = organizerName || 'Unknown Organizer';
+    let finalOrgOrg = organizerOrg || 'Unknown Org';
+
+    if (organizerId) {
+       const organizer = organizers.find(o => o.id === organizerId);
+       if (organizer) {
+         finalOrgName = organizer.name;
+         finalOrgOrg = organizer.organization;
+       }
     }
 
     const tournaments = db.read('tournaments');
@@ -29,8 +35,8 @@ module.exports = function handler(req, res) {
       date,
       venue: venue || 'TBA',
       organizerId,
-      organizerName: organizer.name,
-      organizerOrg: organizer.organization,
+      organizerName: finalOrgName,
+      organizerOrg: finalOrgOrg,
       registeredPlayers: [],
       createdAt: new Date().toISOString()
     };

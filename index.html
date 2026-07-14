@@ -1023,7 +1023,7 @@
         <div class="gallery-slide" style="background-image: url('https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1200&q=80')">
           <span class="slide-label">BADMINTON</span>
         </div>
-        <div class="gallery-slide" style="background-image: url('https://images.pexels.com/photos/3764009/pexels-photo-3764009.jpeg?auto=compress&cs=tinysrgb&w=1200')">
+        <div class="gallery-slide" style="background-image: url('https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=1200&q=80')">
           <span class="slide-label">ATHLETICS</span>
         </div>
         <button class="slider-arrow left" id="sliderPrev">←</button>
@@ -1601,13 +1601,27 @@
     // ═══════════════════════════════════════
     async function createTournament(e) {
       e.preventDefault();
+      
+      const orgSelect = document.getElementById('tOrganizer');
+      const selectedOption = orgSelect.options[orgSelect.selectedIndex];
+      let oName = '', oOrg = '';
+      if (selectedOption && selectedOption.value) {
+         const parts = selectedOption.text.split(' — ');
+         if (parts.length >= 2) {
+           oName = parts[0];
+           oOrg = parts[1];
+         }
+      }
+
       const data = {
         name: document.getElementById('tName').value,
         sport: document.getElementById('tSport').value,
         district: document.getElementById('tDistrict').value,
         date: document.getElementById('tDate').value,
         venue: document.getElementById('tVenue').value,
-        organizerId: document.getElementById('tOrganizer').value
+        organizerId: orgSelect.value,
+        organizerName: oName,
+        organizerOrg: oOrg
       };
 
       try {
