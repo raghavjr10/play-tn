@@ -1023,7 +1023,7 @@
         <div class="gallery-slide" style="background-image: url('https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=1200&q=80')">
           <span class="slide-label">BADMINTON</span>
         </div>
-        <div class="gallery-slide" style="background-image: url('https://images.unsplash.com/photo-1552674605-15c2145efa38?w=1200&q=80')">
+        <div class="gallery-slide" style="background-image: url('https://images.unsplash.com/photo-1530549387722-1c109d063615?w=1200&q=80')">
           <span class="slide-label">ATHLETICS</span>
         </div>
         <button class="slider-arrow left" id="sliderPrev">←</button>
@@ -1570,7 +1570,7 @@
               <div class="t-meta">📍 ${t.district} — ${t.venue}</div>
               <div class="t-meta">🏢 By: ${t.organizerName} (${t.organizerOrg})</div>
               <div class="t-actions">
-                <button class="btn-sm btn-navy" onclick="openJoinTournament('${t.id}', '${t.name.replace(/'/g, "\\'")}')">Register as Player</button>
+                <button class="btn-sm btn-navy" onclick="openJoinTournament('${t.id}', '${t.name.replace(/'/g, "\\'")}', '${t.sport.replace(/'/g, "\\'")}')">Register as Player</button>
                 <span class="player-count">${playerCount} player${playerCount !== 1 ? 's' : ''} registered</span>
               </div>
             </div>
@@ -1624,7 +1624,7 @@
     let selectedPlayerId = null;
     let selectedTournamentId = null;
 
-    async function openJoinTournament(tournamentId, tournamentName) {
+    async function openJoinTournament(tournamentId, tournamentName, tournamentSport) {
       selectedTournamentId = tournamentId;
       selectedPlayerId = null;
       document.getElementById('joinTournamentTitle').textContent = 'Join: ' + tournamentName;
@@ -1635,10 +1635,15 @@
 
       try {
         const res = await fetch(API + '/players');
-        const players = await res.json();
+        let players = await res.json();
+        
+        // Filter players by sport
+        if (tournamentSport) {
+          players = players.filter(p => p.sport.toLowerCase() === tournamentSport.toLowerCase());
+        }
 
         if (players.length === 0) {
-          container.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No players registered yet. Register as a player first!</p>';
+          container.innerHTML = \`<p style="color:var(--text-muted); text-align:center;">No \${tournamentSport} players found. Register as a \${tournamentSport} player first!</p>\`;
         } else {
           let html = '';
           players.forEach(p => {
