@@ -5,6 +5,7 @@ module.exports = async function handler(req, res) {
     const { data: tournaments, error } = await supabase
       .from('tournaments')
       .select('*, tournament_players(player_id)')
+      .eq('status', 'approved')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -50,7 +51,8 @@ module.exports = async function handler(req, res) {
           venue: venue || 'TBA', 
           organizer_id: organizerId || null, 
           organizer_name: finalOrgName, 
-          organizer_org: finalOrgOrg 
+          organizer_org: finalOrgOrg,
+          status: 'pending'
         }
       ])
       .select();
