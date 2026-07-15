@@ -916,9 +916,9 @@
         <span></span><span></span><span></span>
       </button>
       <div class="nav-links" id="navLinks">
-        <a href="#matches">Matches</a>
-        <a href="#organizers">Organizers</a>
-        <a href="#leaderboard">Leaderboard</a>
+        <a href="#matches" id="navMatches">Matches</a>
+        <a href="#organizers" id="navOrganizers">Organizers</a>
+        <a href="#leaderboard" id="navLeaderboard">Leaderboard</a>
         <a href="#about">About</a>
         <a href="#" id="signInLink" onclick="openModal('login'); return false;">Sign In</a>
         <a href="#" class="nav-cta" id="joinNowLink" onclick="openModal('register'); return false;">Join Now</a>
@@ -1967,6 +1967,10 @@
         document.getElementById('organizers').style.display = 'none';
         document.getElementById('leaderboard').style.display = 'none';
         document.getElementById('adminDashboard').style.display = 'block';
+
+        document.getElementById('navMatches').style.display = 'none';
+        document.getElementById('navOrganizers').style.display = 'none';
+        document.getElementById('navLeaderboard').style.display = 'none';
         
         loadAdminTournaments();
       } else if (savedUser) {
