@@ -32,8 +32,11 @@ module.exports = async function handler(req, res) {
     let finalOrgName = organizerName || 'Unknown Organizer';
     let finalOrgOrg = organizerOrg || 'Unknown Org';
 
-    if (organizerId) {
-       const { data: organizer } = await supabase.from('organizers').select('*').eq('id', organizerId).single();
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validOrganizerId = organizerId && uuidRegex.test(organizerId) ? organizerId : null;
+
+    if (validOrganizerId) {
+       const { data: organizer } = await supabase.from('organizers').select('*').eq('id', validOrganizerId).single();
        if (organizer) {
          finalOrgName = organizer.name;
          finalOrgOrg = organizer.organization;
@@ -49,7 +52,7 @@ module.exports = async function handler(req, res) {
           district, 
           date, 
           venue: venue || 'TBA', 
-          organizer_id: organizerId || null, 
+          organizer_id: validOrganizerId, 
           organizer_name: finalOrgName, 
           organizer_org: finalOrgOrg,
           status: 'pending'
