@@ -9,7 +9,7 @@ module.exports = async function handler(req, res) {
 
     if (error) {
       console.error(error);
-      return res.status(500).json({ error: 'Failed to fetch organizers' });
+      return res.status(500).json({ error: 'Failed to fetch organizers', details: error });
     }
 
     return res.json(organizers);

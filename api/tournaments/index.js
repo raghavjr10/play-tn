@@ -10,7 +10,7 @@ module.exports = async function handler(req, res) {
 
     if (error) {
       console.error(error);
-      return res.status(500).json({ error: 'Failed to fetch tournaments' });
+      return res.status(500).json({ error: 'Failed to fetch tournaments', details: error });
     }
 
     // Map tournament_players to registeredPlayers array to match frontend expectation
