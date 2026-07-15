@@ -933,10 +933,50 @@
     <div class="container">
       <h2 class="sec-title" style="margin-bottom:30px;">Admin Dashboard</h2>
       
-      <div style="background:var(--white); padding:24px; border-radius:16px; box-shadow:var(--shadow); margin-bottom:30px;">
-        <h3 style="margin-bottom:16px; color:var(--navy);">Pending Tournaments</h3>
-        <div id="adminTournamentsList">
-          <p>Loading...</p>
+      <div class="modal-tabs" style="justify-content: flex-start; margin-bottom: 24px; border-bottom: 2px solid #eee; padding-bottom: 0;">
+        <button class="modal-tab active" onclick="switchAdminTab('tournaments')" id="tab-tournaments" style="border-radius: 8px 8px 0 0;">Tournaments</button>
+        <button class="modal-tab" onclick="switchAdminTab('organizers')" id="tab-organizers" style="border-radius: 8px 8px 0 0;">Organizers</button>
+        <button class="modal-tab" onclick="switchAdminTab('players')" id="tab-players" style="border-radius: 8px 8px 0 0;">Players</button>
+      </div>
+      
+      <!-- Tournaments Tab -->
+      <div id="adminTournamentsView" style="display:block;">
+        <div style="background:var(--white); padding:24px; border-radius:16px; box-shadow:var(--shadow); margin-bottom:30px;">
+          <h3 style="margin-bottom:16px; color:var(--navy); display:flex; align-items:center; gap:8px;">
+            <span style="width:12px; height:12px; border-radius:50%; background-color:#f59e0b; display:inline-block;"></span> Pending Approval
+          </h3>
+          <div id="adminTournamentsList">
+            <p>Loading...</p>
+          </div>
+        </div>
+
+        <div style="background:var(--white); padding:24px; border-radius:16px; box-shadow:var(--shadow); margin-bottom:30px;">
+          <h3 style="margin-bottom:16px; color:var(--navy); display:flex; align-items:center; gap:8px;">
+            <span style="width:12px; height:12px; border-radius:50%; background-color:#10b981; display:inline-block;"></span> Approved Tournaments
+          </h3>
+          <div id="adminApprovedTournamentsList">
+            <p>Loading...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Organizers Tab -->
+      <div id="adminOrganizersView" style="display:none;">
+        <div style="background:var(--white); padding:24px; border-radius:16px; box-shadow:var(--shadow); margin-bottom:30px;">
+          <h3 style="margin-bottom:16px; color:var(--navy);">Registered Organizers</h3>
+          <div id="adminOrganizersList">
+            <p>Loading...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Players Tab -->
+      <div id="adminPlayersView" style="display:none;">
+        <div style="background:var(--white); padding:24px; border-radius:16px; box-shadow:var(--shadow); margin-bottom:30px;">
+          <h3 style="margin-bottom:16px; color:var(--navy);">Player Leaderboard</h3>
+          <div id="adminPlayersList">
+            <p>Loading...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -2003,8 +2043,22 @@
     // ═══════════════════════════════════════
     // ADMIN DASHBOARD
     // ═══════════════════════════════════════
+    function switchAdminTab(tab) {
+      document.querySelectorAll('#adminDashboard .modal-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      
+      document.getElementById('adminTournamentsView').style.display = tab === 'tournaments' ? 'block' : 'none';
+      document.getElementById('adminOrganizersView').style.display = tab === 'organizers' ? 'block' : 'none';
+      document.getElementById('adminPlayersView').style.display = tab === 'players' ? 'block' : 'none';
+      
+      if (tab === 'tournaments') loadAdminTournaments();
+      if (tab === 'organizers') loadAdminOrganizers();
+      if (tab === 'players') loadAdminLeaderboard();
+    }
+
     async function loadAdminTournaments() {
-      const container = document.getElementById('adminTournamentsList');
+      const pendingContainer = document.getElementById('adminTournamentsList');
+      const approvedContainer = document.getElementById('adminApprovedTournamentsList');
       const password = sessionStorage.getItem('playtn_admin');
       
       try {
@@ -2014,29 +2068,41 @@
         const tournaments = await res.json();
         
         if (!tournaments || tournaments.length === 0) {
-          container.innerHTML = '<p>No pending tournaments.</p>';
+          pendingContainer.innerHTML = '<p>No pending tournaments.</p>';
+          approvedContainer.innerHTML = '<p>No approved tournaments.</p>';
           return;
         }
 
         const pending = tournaments.filter(t => t.status === 'pending');
+        const approved = tournaments.filter(t => t.status === 'approved');
         
         if (pending.length === 0) {
-          container.innerHTML = '<p>All tournaments are approved!</p>';
-          return;
+          pendingContainer.innerHTML = '<p style="color:#777;">All tournaments are approved!</p>';
+        } else {
+          pendingContainer.innerHTML = pending.map(t => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee;">
+              <div>
+                <strong>${t.name}</strong> - ${t.sport} (${t.district})
+                <div style="font-size:0.85rem; color:#777;">Org: ${t.organizer_name}</div>
+              </div>
+              <button class="btn btn-gold" style="padding:6px 12px; font-size:0.85rem;" onclick="approveTournament('${t.id}')">Approve</button>
+            </div>
+          `).join('');
         }
 
-        container.innerHTML = pending.map(t => `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee;">
-            <div>
+        if (approved.length === 0) {
+          approvedContainer.innerHTML = '<p style="color:#777;">No approved tournaments yet.</p>';
+        } else {
+          approvedContainer.innerHTML = approved.map(t => `
+            <div style="padding:12px; border-bottom:1px solid #eee;">
               <strong>${t.name}</strong> - ${t.sport} (${t.district})
-              <div style="font-size:0.85rem; color:#777;">Org: ${t.organizer_name}</div>
+              <div style="font-size:0.85rem; color:#777;">Org: ${t.organizer_name} | Players: ${t.tournament_players ? t.tournament_players.length : 0}</div>
             </div>
-            <button class="btn btn-gold" style="padding:6px 12px; font-size:0.85rem;" onclick="approveTournament('${t.id}')">Approve</button>
-          </div>
-        `).join('');
+          `).join('');
+        }
 
       } catch (e) {
-        container.innerHTML = '<p style="color:red">Error loading pending tournaments.</p>';
+        pendingContainer.innerHTML = '<p style="color:red">Error loading tournaments.</p>';
       }
     }
 
@@ -2060,6 +2126,63 @@
         }
       } catch (e) {
         alert('Network error.');
+      }
+    }
+
+    async function loadAdminOrganizers() {
+      const container = document.getElementById('adminOrganizersList');
+      try {
+        const res = await fetch(API + '/organizers');
+        const organizers = await res.json();
+        
+        if (!organizers || organizers.length === 0) {
+          container.innerHTML = '<p style="color:#777;">No organizers registered.</p>';
+          return;
+        }
+
+        container.innerHTML = organizers.map(o => `
+          <div style="padding:12px; border-bottom:1px solid #eee;">
+            <strong>${o.name}</strong> (${o.email})
+            <div style="font-size:0.85rem; color:#777;">Org: ${o.organization} | Location: ${o.district}</div>
+          </div>
+        `).join('');
+      } catch (e) {
+        container.innerHTML = '<p style="color:red">Error loading organizers.</p>';
+      }
+    }
+
+    async function loadAdminLeaderboard() {
+      const container = document.getElementById('adminPlayersList');
+      try {
+        const res = await fetch(API + '/players');
+        const players = await res.json();
+        
+        if (!players || players.length === 0) {
+          container.innerHTML = '<p style="color:#777;">No players registered.</p>';
+          return;
+        }
+
+        // Sort by participation
+        const sorted = players.sort((a, b) => {
+          const countA = a.tournament_players ? a.tournament_players.length : 0;
+          const countB = b.tournament_players ? b.tournament_players.length : 0;
+          return countB - countA;
+        });
+
+        container.innerHTML = sorted.map((p, index) => {
+          const count = p.tournament_players ? p.tournament_players.length : 0;
+          return `
+            <div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
+              <div>
+                <strong>${index + 1}. ${p.name}</strong>
+                <div style="font-size:0.85rem; color:#777;">${p.sport} | ${p.district}</div>
+              </div>
+              <div style="font-weight:bold; color:var(--navy);">${count} Tournaments</div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        container.innerHTML = '<p style="color:red">Error loading leaderboard.</p>';
       }
     }
   </script>
