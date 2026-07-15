@@ -141,19 +141,19 @@ https://play-tn-xi.vercel.app/
 
 ### Home Page
 
-_Add screenshot here_
+<img width="935" height="434" alt="Screenshot 2026-07-15 223757" src="https://github.com/user-attachments/assets/502a1925-d4bd-4864-8b6d-aee710c75518" />
 
-### Dashboard
+### Admin Page 
 
-_Add screenshot here_
+<img width="938" height="437" alt="Screenshot 2026-07-15 224018" src="https://github.com/user-attachments/assets/99982690-79d1-4771-9464-b6fe35829f45" />
 
 ### Tournament Page
 
-_Add screenshot here_
+<img width="943" height="437" alt="Screenshot 2026-07-15 223906" src="https://github.com/user-attachments/assets/6f401957-f890-49a1-85b0-a604771165b8" />
 
-### Venue Management
+### LeaderBoard
 
-_Add screenshot here_
+<img width="938" height="439" alt="Screenshot 2026-07-15 223938" src="https://github.com/user-attachments/assets/7be5657a-5adc-45ff-9f23-f61db8845850" />
 
 ---
 
@@ -222,15 +222,3 @@ GitHub: https://github.com/raghavjr10
 Project Repository:
 
 https://github.com/raghavjr10/play-tn
-
----
-
-## 📄 License
-
-This project is developed for educational and academic purposes.
-
----
-
-## ⭐ Support
-
-If you found this project useful, please consider giving it a ⭐ on GitHub.
