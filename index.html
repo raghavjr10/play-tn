@@ -1594,17 +1594,23 @@
         let html = '<div style="text-align:center; margin-bottom:20px;"><button class="create-tournament-btn" onclick="openModal(\'tournament\')">+ Create a Tournament</button></div>';
         html += '<div class="tournament-grid">';
         tournaments.forEach(t => {
-          const dateStr = new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+          const dateStr = t.date ? new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBA';
           const playerCount = t.registeredPlayers ? t.registeredPlayers.length : 0;
+          
+          // Safely escape strings for HTML attributes to prevent crashes from corrupted data
+          const safeId = t.id || '';
+          const safeName = (t.name || 'Tournament').replace(/'/g, "\\'");
+          const safeSport = (t.sport || 'Sport').replace(/'/g, "\\'");
+          
           html += `
             <div class="tournament-card">
-              <span class="t-sport">${t.sport}</span>
-              <h4>${t.name}</h4>
+              <span class="t-sport">${t.sport || 'Sport'}</span>
+              <h4>${t.name || 'Unnamed Tournament'}</h4>
               <div class="t-meta">📅 <strong>${dateStr}</strong></div>
-              <div class="t-meta">📍 ${t.district} — ${t.venue}</div>
-              <div class="t-meta">🏢 By: ${t.organizerName} (${t.organizerOrg})</div>
+              <div class="t-meta">📍 ${t.district || 'Location'} — ${t.venue || 'TBA'}</div>
+              <div class="t-meta">🏢 By: ${t.organizerName || 'Unknown'} (${t.organizerOrg || 'Unknown'})</div>
               <div class="t-actions">
-                <button class="btn-sm btn-navy" onclick="openJoinTournament('${t.id}', '${t.name.replace(/'/g, "\\'")}', '${t.sport.replace(/'/g, "\\'")}')">Register as Player</button>
+                <button class="btn-sm btn-navy" onclick="openJoinTournament('${safeId}', '${safeName}', '${safeSport}')">Register as Player</button>
                 <span class="player-count">${playerCount} player${playerCount !== 1 ? 's' : ''} registered</span>
               </div>
             </div>
