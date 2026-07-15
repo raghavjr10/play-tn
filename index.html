@@ -1563,7 +1563,13 @@
         // Merge with local storage to survive Vercel resets
         const localTournaments = JSON.parse(localStorage.getItem('playtn_tournaments') || '[]');
         localTournaments.forEach(lt => {
-          if (!tournaments.find(t => t.id === lt.id)) {
+          const vIndex = tournaments.findIndex(t => t.id === lt.id);
+          if (vIndex > -1) {
+            // Vercel has it, but might have lost state due to cold start.
+            if ((lt.registeredPlayers?.length || 0) > (tournaments[vIndex].registeredPlayers?.length || 0)) {
+               tournaments[vIndex] = lt;
+            }
+          } else {
             tournaments.unshift(lt);
           }
         });
@@ -1729,6 +1735,18 @@
 
         if (res.ok) {
           showMsg('joinMsg', '✅ ' + result.message, 'success');
+          
+          if (result.tournament) {
+             const localTournaments = JSON.parse(localStorage.getItem('playtn_tournaments') || '[]');
+             const tIndex = localTournaments.findIndex(t => t.id === result.tournament.id);
+             if (tIndex > -1) {
+                localTournaments[tIndex] = result.tournament;
+             } else {
+                localTournaments.push(result.tournament);
+             }
+             localStorage.setItem('playtn_tournaments', JSON.stringify(localTournaments));
+          }
+          
           loadTournaments();
           setTimeout(() => closeModal('joinTournament'), 1500);
         } else {
