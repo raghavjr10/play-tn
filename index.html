@@ -1556,10 +1556,17 @@
     // ═══════════════════════════════════════
     async function loadTournaments() {
       const container = document.getElementById('tournamentList');
+      let tournaments = [];
       try {
         const res = await fetch(API + '/tournaments');
-        let tournaments = await res.json();
-        
+        if (res.ok) {
+           tournaments = await res.json();
+        }
+      } catch (e) {
+        console.warn('Fetch failed, falling back to local storage', e);
+      }
+      
+      try {
         // Merge with local storage to survive Vercel resets
         const localTournaments = JSON.parse(localStorage.getItem('playtn_tournaments') || '[]');
         localTournaments.forEach(lt => {
@@ -1605,8 +1612,8 @@
         });
         html += '</div>';
         container.innerHTML = html;
-      } catch {
-        container.innerHTML = '<div class="matches-empty"><p>Could not load tournaments. Is the server running?</p></div>';
+      } catch (e) {
+        container.innerHTML = '<div class="matches-empty"><p>Could not render tournaments. Please try refreshing.</p></div>';
       }
     }
 
