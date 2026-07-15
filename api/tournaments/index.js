@@ -1,9 +1,24 @@
-const db = require('../../lib/db');
+const supabase = require('../../lib/supabase');
 
-module.exports = function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
-    const tournaments = db.read('tournaments');
-    return res.json(tournaments);
+    const { data: tournaments, error } = await supabase
+      .from('tournaments')
+      .select('*, tournament_players(player_id)')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Failed to fetch tournaments' });
+    }
+
+    // Map tournament_players to registeredPlayers array to match frontend expectation
+    const formattedTournaments = tournaments.map(t => ({
+      ...t,
+      registeredPlayers: t.tournament_players.map(tp => tp.player_id)
+    }));
+
+    return res.json(formattedTournaments);
   }
 
   if (req.method === 'POST') {
@@ -13,38 +28,40 @@ module.exports = function handler(req, res) {
       return res.status(400).json({ error: 'Name, sport, district, date, and organizer are required.' });
     }
 
-    const organizers = db.read('organizers');
     let finalOrgName = organizerName || 'Unknown Organizer';
     let finalOrgOrg = organizerOrg || 'Unknown Org';
 
     if (organizerId) {
-       const organizer = organizers.find(o => o.id === organizerId);
+       const { data: organizer } = await supabase.from('organizers').select('*').eq('id', organizerId).single();
        if (organizer) {
          finalOrgName = organizer.name;
          finalOrgOrg = organizer.organization;
        }
     }
 
-    const tournaments = db.read('tournaments');
+    const { data, error } = await supabase
+      .from('tournaments')
+      .insert([
+        { 
+          name, 
+          sport, 
+          district, 
+          date, 
+          venue: venue || 'TBA', 
+          organizer_id: organizerId || null, 
+          organizer_name: finalOrgName, 
+          organizer_org: finalOrgOrg 
+        }
+      ])
+      .select();
 
-    const tournament = {
-      id: Date.now().toString(),
-      name,
-      sport,
-      district,
-      date,
-      venue: venue || 'TBA',
-      organizerId,
-      organizerName: finalOrgName,
-      organizerOrg: finalOrgOrg,
-      registeredPlayers: [],
-      createdAt: new Date().toISOString()
-    };
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Failed to create tournament' });
+    }
 
-    tournaments.push(tournament);
-    db.write('tournaments', tournaments);
-
-    return res.status(201).json({ message: 'Tournament created successfully!', tournament });
+    const newTournament = { ...data[0], registeredPlayers: [] };
+    return res.status(201).json({ message: 'Tournament created successfully!', tournament: newTournament });
   }
 
   res.status(405).json({ error: 'Method not allowed' });

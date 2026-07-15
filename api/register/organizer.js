@@ -1,34 +1,29 @@
-const db = require('../../lib/db');
+const supabase = require('../../lib/supabase');
 
-module.exports = function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+module.exports = async function handler(req, res) {
+  if (req.method === 'POST') {
+    const { name, email, organization, district } = req.body;
+
+    if (!name || !email || !organization || !district) {
+      return res.status(400).json({ error: 'All fields are required.' });
+    }
+
+    const { data, error } = await supabase
+      .from('organizers')
+      .insert([
+        { name, email, organization, district }
+      ])
+      .select();
+
+    if (error) {
+      if (error.code === '23505') { // Unique violation
+        return res.status(409).json({ error: 'An organizer with this email already exists.' });
+      }
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    return res.status(201).json({ message: 'Organizer registered successfully!', organizer: data[0] });
   }
 
-  const { name, email, phone, organization, district } = req.body;
-
-  if (!name || !email || !organization || !district) {
-    return res.status(400).json({ error: 'Name, email, organization, and district are required.' });
-  }
-
-  const organizers = db.read('organizers');
-
-  if (organizers.find(o => o.email === email)) {
-    return res.status(409).json({ error: 'An organizer with this email already exists.' });
-  }
-
-  const organizer = {
-    id: Date.now().toString(),
-    name,
-    email,
-    phone: phone || '',
-    organization,
-    district,
-    registeredAt: new Date().toISOString()
-  };
-
-  organizers.push(organizer);
-  db.write('organizers', organizers);
-
-  res.status(201).json({ message: 'Organizer registered successfully!', organizer });
+  res.status(405).json({ error: 'Method not allowed' });
 };

@@ -1457,43 +1457,7 @@
         if (res.ok) {
           showMsg('organizerMsg', '✅ ' + result.message, 'success');
           document.getElementById('organizerForm').reset();
-          
-          // Manually add to UI for immediate display
-          const container = document.getElementById('organizerList');
-          const empty = container.querySelector('.org-empty');
-          if (empty) empty.remove();
-          
-          let grid = container.querySelector('.org-grid');
-          if (!grid) {
-            grid = document.createElement('div');
-            grid.className = 'org-grid';
-            container.appendChild(grid);
-          }
-          
-          const initials = data.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-          const newCard = document.createElement('div');
-          newCard.className = 'org-card';
-          newCard.innerHTML = `
-              <div class="org-avatar">${initials}</div>
-              <h5>${data.name}</h5>
-              <div class="org-org">${data.organization}</div>
-              <div class="org-detail">📍 ${data.district}</div>
-              <div class="org-detail">📧 ${data.email}</div>
-          `;
-          
-          // Prepend to top of list
-          grid.insertBefore(newCard, grid.firstChild);
-          
-          // Also add to tournament create dropdown
-          const select = document.getElementById('tOrganizer');
-          if (result.organizer) {
-            select.innerHTML += `<option value="${result.organizer.id}">${data.name} — ${data.organization}</option>`;
-            
-            // Persist to local storage to survive page reloads on Vercel
-            const localOrgs = JSON.parse(localStorage.getItem('playtn_orgs') || '[]');
-            localOrgs.push(result.organizer);
-            localStorage.setItem('playtn_orgs', JSON.stringify(localOrgs));
-          }
+          loadOrganizers();
         } else {
           showMsg('organizerMsg', '❌ ' + result.error, 'error');
         }
@@ -1511,16 +1475,9 @@
         const res = await fetch(API + '/organizers');
         let organizers = await res.json();
         
-        // Merge with local storage to survive Vercel ephemeral memory resets
-        const localOrgs = JSON.parse(localStorage.getItem('playtn_orgs') || '[]');
-        localOrgs.forEach(lo => {
-          if (!organizers.find(o => o.email === lo.email)) {
-            organizers.unshift(lo);
-          }
-        });
-
-        if (organizers.length === 0) {
+        if (!organizers || organizers.length === 0) {
           container.innerHTML = '<div class="org-empty"><p>No organizers registered yet. Be the first to register!</p></div>';
+          document.getElementById('tOrganizer').innerHTML = '<option value="">No organizers available</option>';
           return;
         }
 
@@ -1563,25 +1520,11 @@
            tournaments = await res.json();
         }
       } catch (e) {
-        console.warn('Fetch failed, falling back to local storage', e);
+        console.warn('Fetch failed', e);
       }
       
       try {
-        // Merge with local storage to survive Vercel resets
-        const localTournaments = JSON.parse(localStorage.getItem('playtn_tournaments') || '[]');
-        localTournaments.forEach(lt => {
-          const vIndex = tournaments.findIndex(t => t.id === lt.id);
-          if (vIndex > -1) {
-            // Vercel has it, but might have lost state due to cold start.
-            if ((lt.registeredPlayers?.length || 0) > (tournaments[vIndex].registeredPlayers?.length || 0)) {
-               tournaments[vIndex] = lt;
-            }
-          } else {
-            tournaments.unshift(lt);
-          }
-        });
-
-        if (tournaments.length === 0) {
+        if (!tournaments || tournaments.length === 0) {
           container.innerHTML = `
             <div class="matches-empty">
               <p>No upcoming tournaments yet.</p>
@@ -1662,13 +1605,6 @@
         if (res.ok) {
           showMsg('tournamentMsg', '✅ ' + result.message, 'success');
           document.getElementById('tournamentForm').reset();
-          
-          // Persist to local storage
-          if (result.tournament) {
-             const localTournaments = JSON.parse(localStorage.getItem('playtn_tournaments') || '[]');
-             localTournaments.push(result.tournament);
-             localStorage.setItem('playtn_tournaments', JSON.stringify(localTournaments));
-          }
           
           loadTournaments();
           setTimeout(() => closeModal('tournament'), 1500);

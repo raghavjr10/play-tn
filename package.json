@@ -2,5 +2,9 @@
   "name": "play-tn",
   "version": "1.0.0",
   "description": "Play TN - Tamil Nadu Sports Platform",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.5",
+    "dotenv": "^17.4.2"
+  }
 }

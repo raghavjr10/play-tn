@@ -1,6 +1,6 @@
-const db = require('../../../lib/db');
+const supabase = require('../../../lib/supabase');
 
-module.exports = function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -12,35 +12,34 @@ module.exports = function handler(req, res) {
     return res.status(400).json({ error: 'playerId is required.' });
   }
 
-  const players = db.read('players');
-  let player = players.find(p => p.id === playerId);
-  if (!player) {
-    // Vercel ephemeral state fallback
-    player = { id: playerId, name: 'Player', tournaments: [] };
-    players.push(player);
+  // Insert into the junction table
+  const { error } = await supabase
+    .from('tournament_players')
+    .insert([
+      { tournament_id: tournamentId, player_id: playerId }
+    ]);
+
+  if (error) {
+    if (error.code === '23505') { // Unique constraint violation
+      return res.status(409).json({ error: 'Player already registered for this tournament.' });
+    }
+    console.error(error);
+    return res.status(500).json({ error: 'Database error while registering.' });
   }
 
-  const tournaments = db.read('tournaments');
-  let tournament = tournaments.find(t => t.id === tournamentId);
-  if (!tournament) {
-    // Vercel ephemeral state fallback
-    tournament = { id: tournamentId, name: 'Tournament', registeredPlayers: [] };
-    tournaments.push(tournament);
+  // Fetch the tournament to return the updated object (or mock it for the frontend)
+  const { data: tournament } = await supabase
+    .from('tournaments')
+    .select('*, tournament_players(player_id)')
+    .eq('id', tournamentId)
+    .single();
+
+  if (tournament) {
+    tournament.registeredPlayers = tournament.tournament_players.map(tp => tp.player_id);
   }
-
-  if (tournament.registeredPlayers.includes(playerId)) {
-    return res.status(409).json({ error: 'Player already registered for this tournament.' });
-  }
-
-  tournament.registeredPlayers.push(playerId);
-  db.write('tournaments', tournaments);
-
-  if (!player.tournaments) player.tournaments = [];
-  player.tournaments.push(tournamentId);
-  db.write('players', players);
 
   res.json({
-    message: player.name + ' registered for ' + tournament.name + '!',
-    tournament
+    message: 'Registered successfully!',
+    tournament: tournament || { id: tournamentId, registeredPlayers: [playerId] }
   });
 };
