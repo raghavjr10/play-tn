@@ -10,17 +10,17 @@ module.exports = async function handler(req, res) {
 
     let table = role === 'player' ? 'players' : 'organizers';
     
-    // Players don't currently have an email column in our schema.
-    // If a player logs in, we might need to check by name instead, or add email to players.
-    // Let's assume the frontend passes 'name' as 'email' for players for now, 
-    // or we query by 'name' for players and 'email' for organizers.
-    const column = role === 'player' ? 'name' : 'email';
+    let query = supabase.from(table).select('*');
+    
+    if (role === 'player') {
+      // Allow players to log in using either their Name or Email
+      query = query.or(`name.ilike.${email},email.ilike.${email}`);
+    } else {
+      // Organizers must log in using Email
+      query = query.ilike('email', email);
+    }
 
-    const { data: user, error } = await supabase
-      .from(table)
-      .select('*')
-      .ilike(column, email) // case insensitive match
-      .single();
+    const { data: user, error } = await query.single();
 
     if (error || !user) {
       return res.status(404).json({ error: 'Account not found. Please register first.' });
